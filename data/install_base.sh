@@ -37,6 +37,8 @@ alternatives --install /usr/bin/jps jps /usr/java/latest/bin/jps 200000
 # are doing. It's much better to create a custom.sh shell script in
 # /etc/profile.d/ to make custom changes to the environment, as this
 # will prevent the need for merging in future updates.
+echo "export JAVA_HOME=$JAVA_HOME" >> /etc/profile.d/java.sh
+echo 'export PATH=$JAVA_HOME/bin:$PATH' >> /etc/profile.d/java.sh
 # on the other hand /etc/profile.d/eb_envvars.sh uses /usr/java/latest as
 # JAVA_HOME if directory is present
 source /etc/profile
