@@ -6,7 +6,7 @@
     "aws_subnet_id": "{{env `AWS_SUBNET_ID`}}",
     "source_ami": "ami-1b7bbc76",
     "source_ami_name": "koding-eb-1466098752",
-    "ami_name": "druid",
+    "ami_name": "zookeeper",
     "ami_description": "Zookeeper AMI containing exhibitor",
     "region": "us-east-1",
     "instance_type": "m3.xlarge"
