@@ -41,10 +41,13 @@ echo "export JAVA_HOME=$JAVA_HOME" >> /etc/profile.d/java.sh
 echo 'export PATH=$JAVA_HOME/bin:$PATH' >> /etc/profile.d/java.sh
 # on the other hand /etc/profile.d/eb_envvars.sh uses /usr/java/latest as
 # JAVA_HOME if directory is present
-source /etc/profile
 
-# in case of network changes, do not cache the ip forever.
+# IN CASE OF NETWORK CHANGES, DO NOT CACHE THE IP FOREVER.
 grep '^networkaddress.cache.ttl=' ${JAVA_HOME}/jre/lib/security/java.security || echo 'networkaddress.cache.ttl=60' >> ${JAVA_HOME}/jre/lib/security/java.security
+
+# ADD HOSTNAME INTO HOSTS FILE
+echo "127.0.0.1     $HOSTNAME" >> /etc/hosts
+source /etc/profile
 
 # INSTALL PYTHON AND SUPERVISORD - on some systems some of the below does not exist.
 $YUM install python26-pip || echo python26-pip installed
