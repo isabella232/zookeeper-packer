@@ -4,32 +4,23 @@ set -o errexit
 
 YUM="yum --assumeyes"
 
-ZK_HOME="/opt/zookeeper"
-EXBT_HOME="/opt/exhibitor"
-MAVEN_HOME="/usr/share/maven"
-ZK_RELEASE="http://www.apache.org/dist/zookeeper/zookeeper-3.4.8/zookeeper-3.4.8.tar.gz"
-EXHIBITOR_POM="https://raw.githubusercontent.com/Netflix/exhibitor/d911a16d704bbe790d84bbacc655ef050c1f5806/exhibitor-standalone/src/main/resources/buildscripts/standalone/maven/pom.xml"
+. ./env.sh
 
-JAVA_HOME="/usr/java/latest"
 source /etc/profile
 
 export PATH=${JAVA_HOME}/bin:${PATH}
 
-grep '^networkaddress.cache.ttl=' ${JAVA_HOME}/lib/security/java.security || echo 'networkaddress.cache.ttl=60' >> ${JAVA_HOME}/lib/security/java.security
 
-
-# Install Maven
-MAVEN_VERSION=3.3.3
+# INSTALL MAVEN
 cd /usr/share
 wget -q http://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -O - | tar xzf -
-mv /usr/share/apache-maven-${MAVEN_VERSION} /usr/share/maven
-ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+mv /usr/share/apache-maven-${MAVEN_VERSION} $MAVEN_HOME
+ln -s $MAVEN_HOME/bin/mvn /usr/bin/mvn
 
-mkdir -p /opt
+# INSTALL ZK
+mkdir -p ${ZK_HOME} ${ZK_DATA_DIR} ${ZK_LOG_DIR}
 
-# Install ZK
 curl -Lo /tmp/zookeeper.tgz ${ZK_RELEASE}
-mkdir -p ${ZK_HOME}/transactions ${ZK_HOME}/snapshots
 tar -xzf /tmp/zookeeper.tgz -C ${ZK_HOME} --strip-components=1
 rm /tmp/zookeeper.tgz
 
@@ -39,12 +30,39 @@ curl -Lo ${EXBT_HOME}/pom.xml ${EXHIBITOR_POM}
 mvn -f ${EXBT_HOME}/pom.xml package
 ln -s ${EXBT_HOME}/target/exhibitor*jar ${EXBT_HOME}/exhibitor.jar
 
-
-ZOOKEEPER_USER=zookeeper
-
-groupadd -r $ZOOKEEPER_USER
-useradd -g $ZOOKEEPER_USER -M -r $ZOOKEEPER_USER
+groupadd -r $ZK_USER
+useradd -g $ZK_USER -M -r $ZK_USER
 
 # set permissions for zookeeper
 mkdir -p /var/{lib,log}/zookeeper
-chown -R $ZOOKEEPER_USER:$ZOOKEEPER_USER /var/{lib,log}/zookeeper
+chown -R $ZK_USER:$ZK_USER /var/{lib,log}/zookeeper
+chown -R $ZK_USER:$ZK_USER ${ZK_HOME}
+chown -R $ZK_USER:$ZK_USER ${ZK_DATA_DIR}
+chown -R $ZK_USER:$ZK_USER ${ZK_LOG_DIR}
+
+
+cat <<- EOF > $EXBT_HOME/defaults.conf
+    zookeeper-data-directory=$ZK_DATA_DIR
+    zookeeper-install-directory=$ZK_HOME
+    zookeeper-log-directory=$ZK_LOG_DIR
+    log-index-directory=$ZK_LOG_DIR
+    cleanup-period-ms=300000
+    check-ms=30000
+    backup-period-ms=600000
+    client-port=2181
+    cleanup-max-files=20
+    backup-max-store-ms=21600000
+    connect-port=2888
+    observer-threshold=0
+    election-port=3888
+    zoo-cfg-extra=tickTime\=2000&initLimit\=10&syncLimit\=5&quorumListenOnAllIPs\=true
+    auto-manage-instances-settling-period-ms=0
+    auto-manage-instances=1
+    auto-manage-instances-fixed-ensemble-size=$ZK_ENSEMBLE_SIZE
+    backup-extra=throttle\=&bucket-name\=$EXBT_S3_BUCKET&key-prefix\=$EXBT_S3_BACKUP_PREFIX&max-retries\=4&retry-sleep-ms\=30000
+EOF
+
+cat <<- EOF > $EXBT_HOME/credentials.properties
+    com.netflix.exhibitor.s3.access-key-id=${AWS_ACCESS_KEY}
+    com.netflix.exhibitor.s3.access-secret-key=${AWS_SECRET_KEY}
+EOF
