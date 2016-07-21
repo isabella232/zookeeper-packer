@@ -37,13 +37,12 @@ alternatives --install /usr/bin/jps jps /usr/java/latest/bin/jps 200000
 # are doing. It's much better to create a custom.sh shell script in
 # /etc/profile.d/ to make custom changes to the environment, as this
 # will prevent the need for merging in future updates.
-echo "export JAVA_HOME=$JAVA_HOME" > /etc/profile.d/java.sh
 # on the other hand /etc/profile.d/eb_envvars.sh uses /usr/java/latest as
 # JAVA_HOME if directory is present
 source /etc/profile
 
 # in case of network changes, do not cache the ip forever.
-grep '^networkaddress.cache.ttl=' ${JAVA_HOME}/lib/security/java.security || echo 'networkaddress.cache.ttl=60' >> ${JAVA_HOME}/lib/security/java.security
+grep '^networkaddress.cache.ttl=' ${JAVA_HOME}/jre/lib/security/java.security || echo 'networkaddress.cache.ttl=60' >> ${JAVA_HOME}/jre/lib/security/java.security
 
 # INSTALL PYTHON AND SUPERVISORD - on some systems some of the below does not exist.
 $YUM install python26-pip || echo python26-pip installed
